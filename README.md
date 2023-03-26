@@ -1,4 +1,4 @@
-# insurance_policy
+# SPA App
 
 ## 🎯 Task
 
