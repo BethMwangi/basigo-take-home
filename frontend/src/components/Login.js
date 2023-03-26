@@ -16,7 +16,11 @@ function LoginPage() {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       
-      navigate('/dashboard');
+      if (response.data.user.is_lead) {
+        navigate('/dashboard');
+      } else if (response.data.user.is_customer){
+      navigate('/customerdashboard');
+      }
     } catch (error) {
       setError(error.message);
     }

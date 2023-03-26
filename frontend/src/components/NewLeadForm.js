@@ -7,18 +7,16 @@ import NavBar from "./NavBar";
 function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState([]);
+  const [newLeadData, setNewLeadData] = useState({
+    first_name: "",
+    middle_name: "",
+    phone_number: "",
+    location: "",
+    gender: "",
+  });
   const [error, setError] = useState(null);
-  const [phoneNumberError, setPhoneNumberError] = useState("");
-  const [unauthorizedError, setUnauthorizedError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const navigate = useNavigate();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm();
 
   useEffect(() => {
     const access_token = localStorage.getItem("access_token");
@@ -27,7 +25,7 @@ function Dashboard() {
     if (!access_token || !refresh_token) {
       navigate("/");
     } else {
-      fetch("http://127.0.0.1:8000/api/v1/lead/", {
+      fetch("http://127.0.0.1:8000/api/v1/lead/create_lead/", {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
@@ -46,6 +44,7 @@ function Dashboard() {
         })
         .then((response) => response.json())
         .then((data) => {
+          console.log(data);
           if (data.access) {
             localStorage.setItem("access_token", data.access);
           }
@@ -56,6 +55,18 @@ function Dashboard() {
     }
   }, [navigate]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    navigate("/");
+  };
+
+  const handleNewLeadDataChange = (e) => {
+    setNewLeadData({
+      ...newLeadData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const refresh = async (refresh_token) => {
     const response = await fetch("http://127.0.0.1:8000/api/token/refresh/", {
@@ -70,7 +81,9 @@ function Dashboard() {
     return { access_token: data.access };
   };
 
-  const handleNewLeadSubmit = async (data) => {
+  const handleNewLeadSubmit = async (e) => {
+    e.preventDefault();
+
     const access_token = localStorage.getItem("access_token");
     const refresh_token = localStorage.getItem("refresh_token");
 
@@ -83,7 +96,7 @@ function Dashboard() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${access_token}`,
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(newLeadData),
         }
       );
       if (response.status === 401) {
@@ -98,54 +111,36 @@ function Dashboard() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${access_token}`,
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(newLeadData),
           }
         );
         const data = await retryResponse.json();
+        console.log(data);
         setLeads([...leads, data]);
-        reset();
-      } else if (response.status === 201) {
-        const responseData = await response.json();
-        setLeads([...leads, responseData]);
-        setSuccessMessage("Lead created successfully!");
-        setUnauthorizedError(null); // reset unauthorized error state
-        reset();
-      } else {
-        const responseData = await response.json();
-        if (responseData.is_lead) {
-          setLeads([...leads, responseData]);
-          setSuccessMessage("Lead created successfully!");
-          setUnauthorizedError(null); // reset unauthorized error state
-          reset();
-        } else if (!responseData.is_lead) {
-          setUnauthorizedError("You are not authorized to create leads.");
-        } else {
-          setError(
-            "An error occurred while creating the lead. Please try again later."
-          );
-        }
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 403) {
-        setUnauthorizedError("You are not authorized to perform this action.");
-      } else if (error.response && error.response.data) {
-        setPhoneNumberError("phone_number", {
-          type: "manual",
-          message: error.response.data.phone_number,
+        setNewLeadData({
+          first_name: "",
+          middle_name: "",
+          phone_number: "",
+          location: "",
+          gender: "",
         });
       } else {
-        setError(
-          "An error occurred while creating the lead. Please try again later."
-        );
+        const data = await response.json();
+        console.log(data);
+        setLeads([...leads, data]);
+        setNewLeadData({
+          first_name: "",
+          middle_name: "",
+          phone_number: "",
+          location: "",
+          gender: "",
+        });
       }
+    } catch (error) {
+      console.log(error);
+      setError(error.response.data.phone_number);
     }
   };
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    navigate("/");
-  };
-
 
   return (
     <div className="relative flex flex-col overflow-hidden">
@@ -154,10 +149,9 @@ function Dashboard() {
         <p>Loading...</p>
       ) : (
         <>
-          <div className="container mx-auto p-5 min-h-screen overflow-hidden">
-            <div className="p-1.5 w-full inline-block align-middle">
-                
-              <form onSubmit={handleSubmit(handleNewLeadSubmit)}>
+          <div className="relative flex flex-col justify-center min-h-screen overflow-hidden">
+            <div className="w-full pt-0 m-auto bg-white rounded-md shadow-md lg:max-w-xl">
+              <form onSubmit={handleNewLeadSubmit}>
                 <div className="mb-2">
                   <label
                     htmlFor="first_name"
@@ -169,16 +163,10 @@ function Dashboard() {
                     <input
                       type="text"
                       name="first_name"
-                      {...register("first_name", { required: true })}
-                      className={`block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 ${
-                        errors.first_name ? "border-red-500" : ""
-                      }`}
+                      value={newLeadData.first_name}
+                      onChange={handleNewLeadDataChange}
+                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                     />
-                    {errors.first_name && (
-                      <span className="text-red-500">
-                        This field is required
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="mt-4">
@@ -186,22 +174,16 @@ function Dashboard() {
                     htmlFor="middle_name"
                     className="block text-sm font-medium text-gray-700 undefined"
                   >
-                    Middle Name
+                    Last Name
                   </label>
                   <div className="flex flex-col items-start">
                     <input
                       type="text"
                       name="middle_name"
-                      {...register("middle_name", { required: true })}
-                      className={`block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 ${
-                        errors.middle_name ? "border-red-500" : ""
-                      }`}
+                      value={newLeadData.middle_name}
+                      onChange={handleNewLeadDataChange}
+                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                     />
-                    {errors.middle_name && (
-                      <span className="text-red-500">
-                        This field is required
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="mt-4">
@@ -215,16 +197,10 @@ function Dashboard() {
                     <input
                       type="text"
                       name="location"
-                      {...register("location", { required: true })}
-                      className={`block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 ${
-                        errors.location ? "border-red-500" : ""
-                      }`}
+                      value={newLeadData.location}
+                      onChange={handleNewLeadDataChange}
+                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                     />
-                    {errors.location && (
-                      <span className="text-red-500">
-                        This field is required
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="mt-4">
@@ -238,7 +214,8 @@ function Dashboard() {
                     <select
                       id="gender"
                       name="gender"
-                      {...register("gender")}
+                      value={newLeadData.gender}
+                      onChange={handleNewLeadDataChange}
                       className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
                       <option value="">Select gender</option>
@@ -259,33 +236,16 @@ function Dashboard() {
                     <input
                       type="tel"
                       name="phone_number"
-                      {...register("phone_number", { required: true })}
-                      className={`block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 ${
-                        errors.phone_number ? "border-red-500" : ""
-                      }`}
+                      value={newLeadData.phone_number}
+                      onChange={handleNewLeadDataChange}
+                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                     />
-                    {errors.phone_number && (
-                      <span className="text-red-500">
-                        This field is required
-                      </span>
-                    )}
-                    {phoneNumberError && (
-                      <span className="text-red-500">{phoneNumberError}</span>
-                    )}
                   </div>
                 </div>
-                {unauthorizedError && (
-                  <div className="text-red-500">{unauthorizedError}</div>
-                )}
-                {successMessage && (
-                  <div className="text-green-500">{successMessage}</div>
-                )}
-
                 <div className="flex items-center justify-end mt-4">
                   <button
                     type="submit"
                     className="inline-flex items-center px-4 py-2 ml-4 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-gray-900 border border-transparent rounded-md active:bg-gray-900 false"
-                    disabled={isSubmitting}
                   >
                     Add Lead
                   </button>
@@ -410,3 +370,120 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+
+import NavBar from "./NavBar";
+
+function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState([]);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
+  const { register, handleSubmit, reset } = useForm();
+
+  useEffect(() => {
+    const access_token = localStorage.getItem("access_token");
+    const refresh_token = localStorage.getItem("refresh_token");
+
+    if (!access_token || !refresh_token) {
+      navigate("/");
+    } else {
+      fetch("http://127.0.0.1:8000/api/v1/lead/create_lead/", {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            return fetch("http://127.0.0.1:8000/api/token/refresh/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ refresh: refresh_token }),
+            });
+          }
+          return response;
+        })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          if (data.access) {
+            localStorage.setItem("access_token", data.access);
+          }
+          setLeads(data);
+          setLoading(false);
+        })
+        .catch((error) => console.error(error));
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    navigate("/");
+  };
+
+  const handleNewLeadSubmit = async (data) => {
+    const access_token = localStorage.getItem("access_token");
+    const refresh_token = localStorage.getItem("refresh_token");
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/v1/lead/create_lead/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access_token}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+      if (response.status === 401) {
+        const { access_token } = await refresh(refresh_token);
+
+        // retry the original request with the new access token
+        const retryResponse = await fetch(
+          "http://127.0.0.1:8000/api/v1/lead/create_lead/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${access_token}`,
+            },
+            body: JSON.stringify(data),
+          }
+        );
+        const data = await retryResponse.json();
+        console.log(data);
+        setLeads([...leads, data]);
+        reset();
+      } else {
+        const data = await response.json();
+        console.log(data);
+        setLeads([...leads, data]);
+        reset();
+      }
+    } catch (error) {
+      console.log(error);
+      setError(error.response.data.phone_number);
+    }
+  };
+
+  return (
+    <div className="relative flex flex-col overflow-hidden">
+      <NavBar handleLogout={handleLogout} />
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          <div className="relative flex flex-col justify-center min-h-screen overflow-hidden">
+            <div className="w-full pt-0 m-auto bg-white rounded-md shadow-md lg:max-w-xl">
+             

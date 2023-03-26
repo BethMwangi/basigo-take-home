@@ -11,7 +11,7 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function NavBar() { 
+export default function NavBar({ handleLogout }) { 
   return (
     <Disclosure as="nav" className="bg-gray-800">
       {({ open }) => (
@@ -58,7 +58,7 @@ export default function NavBar() {
                   <span className="sr-only">View notifications</span>
                   <BellIcon className="h-6 w-6" aria-hidden="true" />
                 </button>
-                <button
+                <button  onClick={handleLogout}
                   type="button"
                   className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                 >
