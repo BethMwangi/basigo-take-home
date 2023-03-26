@@ -5,9 +5,9 @@ app_name = 'basigo'
 
 urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
-    path('login/', views.LoginView.as_view(), name='login'),  
-    path('lead/create_lead/',
-         views.LeadCreateView.as_view(), name='lead-list'),
+    path('login/', views.LoginView.as_view(), name='login'), 
+    path('lead/', views.LeadListView.as_view(), name='lead-list'),
+    path('lead/create_lead/', views.LeadCreateView.as_view(), name='lead-create'),
     path('lead/<int:pk>/', views.LeadDetailView.as_view(), name='detail-lead'),
     path('customer/create_customer/',
          views.CustomerCreateView.as_view(), name='customer-list'),

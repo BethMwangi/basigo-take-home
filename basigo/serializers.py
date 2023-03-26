@@ -14,7 +14,7 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = "__all__"
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -47,4 +47,4 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         read_only_fields = ['created_by']
-        fields = ['id', 'first_name', 'middle_name', 'phone_number', 'location', 'gender', 'created_by']
+        fields ="__all__"

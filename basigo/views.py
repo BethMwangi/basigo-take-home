@@ -3,6 +3,9 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db import IntegrityError
+from rest_framework.exceptions import ValidationError
+
 
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, LeadSerializer, CustomerSerializer
 from .permissions import IsLeadUser, IsCustomerUser
@@ -37,16 +40,25 @@ class LoginView(generics.GenericAPIView):
         }
         return Response(response_data, status=status.HTTP_200_OK)
     
-
-class LeadCreateView(generics.ListCreateAPIView):
+        
+class LeadListView(generics.ListAPIView):
     queryset = Lead.objects.all()
+    serializer_class = LeadSerializer
+    permission_classes = [IsAuthenticated]
+
+class LeadCreateView(generics.CreateAPIView):
     serializer_class = LeadSerializer
     permission_classes = [IsAuthenticated, IsLeadUser]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-
-
+        try:
+            serializer.save(created_by=self.request.user)
+        except IntegrityError:
+            raise ValidationError({'phone_number': 'Phone number must be unique'})
+        else:
+            response_data = serializer.data
+            return Response(response_data, status=status.HTTP_201_CREATED)
+    
 class LeadDetailView(generics.RetrieveUpdateAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
@@ -72,5 +84,4 @@ class CustomerDetailView(generics.RetrieveUpdateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
-
 
